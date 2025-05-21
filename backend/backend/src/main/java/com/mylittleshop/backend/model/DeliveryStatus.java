@@ -1,8 +1,12 @@
 package com.mylittleshop.backend.model;
 
 public enum DeliveryStatus {
-    READY,
-    SHIPPING,
+    PENDING,
+    PROCESSING,
+    READY_FOR_PICKUP,
+    IN_TRANSIT,
     DELIVERED,
+    FAILED,
+    RETURNED,
     CANCELLED
-} 
+}

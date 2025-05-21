@@ -78,6 +78,15 @@ CREATE TABLE inventory (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
+/* Delivery - 순서 변경: orders 테이블 이전에 배치 */
+CREATE TABLE deliveries (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    recipient_name VARCHAR(100) NOT NULL,
+    contact_number VARCHAR(20) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    status VARCHAR(20)
+);
+
 /* Orders */
 CREATE TABLE orders (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -118,15 +127,6 @@ CREATE TABLE shipments (
     status VARCHAR(20),
     tracking_number VARCHAR(100),
     FOREIGN KEY (order_id) REFERENCES orders(id)
-);
-
-/* Delivery */
-CREATE TABLE deliveries (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    recipient_name VARCHAR(100) NOT NULL,
-    contact_number VARCHAR(20) NOT NULL,
-    address VARCHAR(255) NOT NULL,
-    status VARCHAR(20)
 );
 
 /* Delivery Address */

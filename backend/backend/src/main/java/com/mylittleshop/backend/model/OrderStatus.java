@@ -1,9 +1,18 @@
 package com.mylittleshop.backend.model;
 
 public enum OrderStatus {
-    CREATED,
-    PAID,
+    PENDING,
+    PROCESSING,
     SHIPPED,
     DELIVERED,
-    CANCELLED
-} 
+    COMPLETED,
+    CANCELLED,
+    REFUNDED,
+    PAYMENT_PENDING,
+    PAYMENT_FAILED,
+    ON_HOLD,
+    RETURNED,
+    PARTIALLY_SHIPPED,
+    PARTIALLY_DELIVERED,
+    PARTIALLY_REFUNDED
+}

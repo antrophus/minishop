@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.4.5'
+	id 'org.springframework.boot' version '3.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -23,7 +23,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'mysql:mysql-connector-java:8.0.33'
-	implementation "org.flywaydb:flyway-core:9.22.3"
+    implementation 'org.flywaydb:flyway-core:9.22.3' // 현재 사용 중인 버전
+    implementation 'org.flywaydb:flyway-mysql:9.22.3' // 추가해야 할 의존성
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'com.h2database:h2:2.2.224'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testCompileOnly 'org.projectlombok:lombok'

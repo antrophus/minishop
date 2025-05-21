@@ -1,7 +1,11 @@
 package com.mylittleshop.backend.model;
 
 public enum ProductStatus {
-    NEW,
-    PROMOTION,
-    SOLD_OUT
-} 
+    ACTIVE,
+    INACTIVE,
+    SOLD_OUT,
+    DISCONTINUED,
+    COMING_SOON,
+    OUT_OF_STOCK,
+    ARCHIVED
+}

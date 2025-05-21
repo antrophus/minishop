@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: mylittleshop-backend
+  
+  # 기본 프로파일 설정
+  profiles:
+    active: dev
+  
+  # 데이터베이스 공통 설정
+  datasource:
+    url: jdbc:mysql://localhost:3306/mylittleshop
+    username: cutepanda
+    password: panda
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # HikariCP 설정
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000 # 5분
+      max-lifetime: 1800000 # 30분
+      connection-timeout: 30000 # 30초
+      auto-commit: true
+  
+  # JPA 공통 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        format_sql: true
+        use_sql_comments: false
+        default_batch_fetch_size: 100
+  
+  # Flyway 마이그레이션 설정
+  flyway:
+    enabled: false
+    locations: classpath:none
+    baseline-on-migrate: false
+    validate-on-migrate: false
+    clean-disabled: false
+
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+    com.mylittleshop: DEBUG
+
+# 서버 설정
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain,text/css,application/javascript
+    min-response-size: 1024 
