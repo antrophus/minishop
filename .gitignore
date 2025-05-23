@@ -36,3 +36,7 @@ task/
 tasks/ 
 backend/backend/docs/
 docs/
+
+.roomodes
+.taskmasterconfig
+.windsurfrules
