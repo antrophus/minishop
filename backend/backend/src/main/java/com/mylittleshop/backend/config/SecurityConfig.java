@@ -51,7 +51,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // CSRF 비활성화(필요시 활성화)
             .cors(cors -> {}) // CORS 기본 활성화(추후 상세 설정)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                // Swagger UI 및 OpenAPI 경로는 모두 허용
+                .requestMatchers(
+                    "/auth/register",   // 회원가입
+                    "/auth/login",      // 로그인
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/swagger-resources/**",
+                    "/webjars/**",
+                    "/swagger-ui.html"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex

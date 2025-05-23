@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import jakarta.validation.Valid;
 
 import com.mylittleshop.backend.dto.UserLoginRequest;
 import com.mylittleshop.backend.dto.UserLoginResponse;
@@ -18,6 +22,7 @@ import com.mylittleshop.backend.model.User;
 import com.mylittleshop.backend.model.UserProfile;
 import com.mylittleshop.backend.security.JwtTokenProvider;
 import com.mylittleshop.backend.service.UserService;
+import com.mylittleshop.backend.exception.UserAlreadyExistsException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +31,7 @@ import lombok.RequiredArgsConstructor;
  * - code-generation-rules.md 및 기존 서비스/구조 규칙을 100% 준수합니다.
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final UserService userService;
@@ -37,7 +42,7 @@ public class AuthController {
      * 회원가입 API
      */
     @PostMapping("/register")
-    public ResponseEntity<UserRegistrationResponse> register(@RequestBody UserRegistrationRequest request) {
+    public ResponseEntity<UserRegistrationResponse> register(@Valid @RequestBody UserRegistrationRequest request) {
         // User 엔티티 생성
         User user = new User();
         user.setEmail(request.getEmail());
@@ -89,6 +94,26 @@ public class AuthController {
                 user.getName()
         );
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 회원가입 시 중복 사용자 예외 처리
+     */
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<String> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    /**
+     * 입력값 검증 실패 시 400 Bad Request와 상세 메시지 반환
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+        StringBuilder sb = new StringBuilder();
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+            sb.append(error.getField()).append(": ").append(error.getDefaultMessage()).append("; ");
+        }
+        return ResponseEntity.badRequest().body(sb.toString());
     }
 
     // 추가적인 인증/예외 처리 핸들러 등 필요시 구현

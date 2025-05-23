@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.mylittleshop.backend.exception.UserAlreadyExistsException;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -104,11 +106,11 @@ public class UserService {
     public User registerUser(User user, UserProfile profile) {
         // 중복 체크
         if (userRepository.existsByUsername(user.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new UserAlreadyExistsException("Username already exists");
         }
         
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new UserAlreadyExistsException("Email already exists");
         }
         
         // 비밀번호 암호화
