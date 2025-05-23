@@ -51,8 +51,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // CSRF 비활성화(필요시 활성화)
             .cors(cors -> {}) // CORS 기본 활성화(추후 상세 설정)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // 인증 관련 엔드포인트는 모두 허용
-                .anyRequest().authenticated() // 그 외는 인증 필요
+                .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(jwtAuthenticationEntryPoint)

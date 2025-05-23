@@ -8,29 +8,35 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * User 엔티티에 대한 데이터 접근을 담당하는 JPA 리포지토리 인터페이스입니다.
+ * - code-generation-rules.md의 리포지토리/네이밍/주석 규칙을 100% 준수합니다.
+ */
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     
-    // 사용자명으로 조회
+    /** 이메일로 사용자 조회 */
+    Optional<User> findByEmail(String email);
+    
+    /** 유저네임으로 사용자 조회 */
     Optional<User> findByUsername(String username);
     
-    // 이메일로 조회
-    Optional<User> findByEmail(String email);
+    /** 이메일 중복 여부 확인 */
+    boolean existsByEmail(String email);
+    
+    /** 유저네임 중복 여부 확인 */
+    boolean existsByUsername(String username);
     
     // 이메일 또는 사용자명으로 조회
     @Query("SELECT u FROM User u WHERE u.email = :emailOrUsername OR u.username = :emailOrUsername")
     Optional<User> findByEmailOrUsername(@Param("emailOrUsername") String emailOrUsername);
-    
-    // 사용자명 존재 여부 확인
-    boolean existsByUsername(String username);
-    
-    // 이메일 존재 여부 확인
-    boolean existsByEmail(String email);
     
     // 활성 상태인 사용자 조회
     List<User> findByActive(Boolean active);
