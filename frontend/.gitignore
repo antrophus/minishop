@@ -12,6 +12,21 @@ dist
 dist-ssr
 *.local
 
+### react ###
+.DS_*
+*.log
+logs
+**/*.backup.*
+**/*.back.*
+
+bower_components
+
+*.sublime*
+
+psd
+thumb
+sketch
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
