@@ -52,3 +52,7 @@ export default tseslint.config({
   },
 })
 ```
+
+## TailwindCSS/PostCSS 환경설정 변경 (2025-06-XX)
+- postcss.config.js → postcss.config.cjs로 변경 (ESM 호환성 문제 해결)
+- src/main.tsx에서 styles.css import 제거 (존재하지 않는 파일)

@@ -1,8 +1,6 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
+// Tailwind는 PostCSS를 통해 처리되므로 별도 플러그인 필요 없음
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  // plugins: [tailwindcss()], // 삭제
 })

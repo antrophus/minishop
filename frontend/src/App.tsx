@@ -52,7 +52,7 @@ function App() {
     const res = await apiFetch('/register', {
       method: 'POST',
       body: JSON.stringify({
-        email: form.email, username: form.username, password: form.password,
+        email: form.email.trim(), username: form.username, password: form.password,
         name: form.name, phone: form.phone, address: form.address, gender: form.gender
       })
     });
