@@ -528,4 +528,45 @@
 ### 로깅 전략
 - 구조화된 로깅 구현 (JSON 형식)
 - 로그 레벨 적절히 구성 (PROD/DEV 환경 분리)
-- ELK 스택 연동 계획 
+- ELK 스택 연동 계획
+
+### [2025-05-23] User Registration, SecurityConfig, Swagger 접근 이슈 및 해결
+#### 목표 이해 및 준비
+- User Registration(회원가입) API의 인증 예외 처리, 입력값 검증, Swagger UI 접근성 확보, Spring Security context-path 관련 이슈 해결
+- Spring Boot 3.x, JWT 기반 인증, Swagger(OpenAPI) 문서화 환경에서의 보안/접근 정책 점검
+
+#### 주요 작업 및 이슈 해결
+1. **회원가입/로그인 엔드포인트 인증 예외 처리**
+   - SecurityConfig.java에서 `/auth/register`, `/auth/login` 등 인증 없이 접근해야 하는 엔드포인트를 permitAll()에 추가
+   - context-path(`/api`)가 있을 때는 requestMatchers에 prefix 없이 경로를 작성해야 정상 동작함을 확인
+   - Swagger/OpenAPI 관련 경로도 동일하게 prefix 없이 permitAll()에 추가
+   - 401 Unauthorized 문제를 해결하고, 회원가입/로그인/Swagger UI 접근이 모두 정상 동작함을 검증
+
+2. **입력값 검증 및 예외 처리**
+   - UserRegistrationRequest DTO에 jakarta.validation 기반 어노테이션(@NotBlank, @Email 등) 적용
+   - AuthController에 @Valid 적용 및 MethodArgumentNotValidException 예외 핸들러 추가로 입력값 검증 실패 시 400 Bad Request와 상세 메시지 반환
+
+3. **Swagger UI 접근 이슈 및 해결**
+   - context-path가 `/api`일 때 Swagger UI 경로가 `/api/swagger-ui/index.html`로 매핑됨을 확인
+   - SecurityConfig에서 Swagger 관련 경로를 prefix 없이 permitAll()에 추가하여 인증 없이 접근 가능하도록 수정
+   - 실제 브라우저 및 curl로 Swagger UI, OpenAPI docs 접근 테스트 완료
+
+4. **테스트 코드 작성 및 실행**
+   - AuthControllerTest에서 회원가입 정상/실패(중복, 잘못된 입력 등) 케이스 단위 테스트 작성
+   - 테스트 실행 시 DataIntegrityViolationException 등 DB 제약조건 위반 이슈 발생 → 테스트 데이터/DB 상태 점검 필요
+
+5. **주요 교훈 및 Best Practice**
+   - Spring Security의 requestMatchers 경로는 context-path를 제외하고 작성해야 한다는 점을 명확히 인지
+   - Swagger 등 민감한 경로는 운영 배포 시 permitAll에서 제외하거나 접근 제한 필요
+   - 회원가입/로그인 등은 항상 인증 없이 접근 가능해야 하므로 permitAll 유지
+   - 입력값 검증, 예외 처리, API 문서화, 테스트 자동화 등 백엔드 품질 확보를 위한 표준 프로세스 재확인
+
+#### 작업 완료 처리
+- SecurityConfig, AuthController, UserRegistrationRequest 등 관련 코드 수정 및 테스트 완료
+- Swagger UI, 회원가입/로그인 API 정상 동작 확인
+- 작업 로그 및 교훈을 WORK_PROGRESS.md에 반영
+
+#### 다음 단계
+- 테스트 데이터/DB 상태 개선 및 테스트 자동화 안정화
+- Swagger 문서 커스터마이즈 및 운영 환경 보안 강화
+- Product/Order 등 주요 도메인 API 개발 및 테스트 지속 
