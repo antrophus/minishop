@@ -25,6 +25,10 @@ import com.mylittleshop.backend.service.UserService;
 import com.mylittleshop.backend.exception.UserAlreadyExistsException;
 
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * 인증(회원가입/로그인) 관련 API를 제공하는 컨트롤러입니다.
@@ -33,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "인증/회원가입", description = "회원가입 및 인증 관련 API")
 public class AuthController {
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
@@ -41,6 +46,12 @@ public class AuthController {
     /**
      * 회원가입 API
      */
+    @Operation(summary = "회원가입", description = "이메일, 비밀번호, 이름을 입력받아 신규 사용자를 등록합니다. 중복 이메일은 허용되지 않으며, 비밀번호는 암호화되어 저장됩니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "회원가입 성공"),
+        @ApiResponse(responseCode = "400", description = "입력값 검증 실패 또는 잘못된 요청"),
+        @ApiResponse(responseCode = "409", description = "이미 존재하는 이메일")
+    })
     @PostMapping("/register")
     public ResponseEntity<UserRegistrationResponse> register(@Valid @RequestBody UserRegistrationRequest request) {
         // User 엔티티 생성
@@ -60,7 +71,13 @@ public class AuthController {
 
         User saved = userService.registerUser(user, profile);
         UserRegistrationResponse response = new UserRegistrationResponse(
-                saved.getId(), saved.getEmail(), saved.getUsername(), saved.getName(), saved.getCreatedAt()
+                saved.getId(),
+                saved.getEmail(),
+                saved.getUsername(),
+                saved.getName(),
+                saved.getCreatedAt(),
+                true,
+                "회원가입이 완료되었습니다."
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

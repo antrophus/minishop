@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * 회원가입 요청 정보를 담는 DTO입니다.
@@ -18,6 +19,7 @@ public class UserRegistrationRequest {
     /** 이메일(필수, 형식 검증) */
     @NotBlank(message = "이메일은 필수입니다.")
     @Email(message = "이메일 형식이 올바르지 않습니다.")
+    @Schema(description = "사용자 이메일", example = "user@example.com", required = true)
     private String email;
 
     /** 유저네임(필수, 3~50자) */
@@ -28,10 +30,12 @@ public class UserRegistrationRequest {
     /** 비밀번호(필수, 8~100자) */
     @NotBlank(message = "비밀번호는 필수입니다.")
     @Size(min = 8, max = 100, message = "비밀번호는 8자 이상이어야 합니다.")
+    @Schema(description = "사용자 비밀번호(8자 이상)", example = "password123", required = true)
     private String password;
 
     /** 이름(필수) */
     @NotBlank(message = "이름은 필수입니다.")
+    @Schema(description = "사용자 이름", example = "홍길동", required = true)
     private String name;
 
     /** 전화번호(선택) */
