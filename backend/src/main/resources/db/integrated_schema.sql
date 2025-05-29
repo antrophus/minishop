@@ -25,6 +25,7 @@ CREATE TABLE users (
     gender VARCHAR(10),
     active BOOLEAN NOT NULL DEFAULT TRUE,
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    email_verified_at DATETIME,
     locked BOOLEAN NOT NULL DEFAULT FALSE,
     account_expire_date DATE,
     last_login_at DATETIME,

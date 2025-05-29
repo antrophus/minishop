@@ -53,12 +53,25 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // CSRF 비활성화(필요시 활성화)
-            .cors(cors -> {}) // CORS 기본 활성화(추후 상세 설정)
+            .cors(cors -> cors.configurationSource(request -> {
+                CorsConfiguration corsConfig = new CorsConfiguration();
+                corsConfig.addAllowedOrigin("http://localhost:3000"); // Next.js
+                corsConfig.addAllowedOrigin("http://localhost:5173"); // Vite
+                corsConfig.addAllowedHeader("*");
+                corsConfig.addAllowedMethod("*");
+                corsConfig.setAllowCredentials(true);
+                return corsConfig;
+            })) // CORS 설정 강화
             .authorizeHttpRequests(auth -> auth
                 // Swagger UI 및 OpenAPI 경로는 모두 허용
                 .requestMatchers(
-                    "/auth/register",   // 회원가입
-                    "/auth/login",      // 로그인
+                    "/auth/register",              // 회원가입 (기존)
+                    "/auth/email-verification",    // 이메일 인증 요청 (추가)
+                    "/auth/complete-registration", // 회원가입 완료 (추가)
+                    "/auth/login",                 // 로그인
+                    "/auth/verify-email",          // 이메일 인증 (추가)
+                    "/auth/resend-verification",   // 이메일 재발송 (추가)
+                    "/auth/verification-status",   // 인증 상태 확인 (추가)
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/swagger-resources/**",
@@ -77,7 +90,8 @@ public class SecurityConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin("http://localhost:5173"); // 개발용 프론트엔드 주소
+        config.addAllowedOrigin("http://localhost:3000"); // Next.js 프론트엔드 주소
+        config.addAllowedOrigin("http://localhost:5173"); // Vite 프론트엔드 주소 (기존 설정 유지)
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);

@@ -37,7 +37,10 @@ out/
 .vscode/
 
 application.properties
+application-prod.yml
 
 src/main/resources/application.yml
 
 docs/
+
+.env

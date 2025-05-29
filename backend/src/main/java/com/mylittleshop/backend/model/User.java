@@ -52,6 +52,10 @@ public class User {
     // 이메일 인증 완료 여부
     @Column(name = "email_verified", nullable = false)
     private Boolean emailVerified = false;
+
+    // 이메일 인증 완료 시간
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
     
     // 계정 잠금 여부
     @Column(nullable = false)

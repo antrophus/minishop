@@ -209,6 +209,7 @@ public class UserService {
         userRepository.findById(id)
                 .map(user -> {
                     user.setEmailVerified(true);
+                    user.setEmailVerifiedAt(LocalDateTime.now());
                     return userRepository.save(user);
                 })
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
@@ -429,5 +430,22 @@ public class UserService {
         token.setUsed(true);
         token.setUsedAt(java.time.LocalDateTime.now());
         emailVerificationTokenRepository.save(token);
+    }
+
+    /**
+     * 이메일 인증 재발송
+     * @param email 사용자 이메일
+     * @return 생성된 토큰
+     */
+    @Transactional
+    public EmailVerificationToken resendEmailVerification(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        
+        if (Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new RuntimeException("이미 인증된 이메일입니다.");
+        }
+        
+        return createEmailVerificationTokenForUser(user, 24 * 60 * 60 * 1000L); // 24시간
     }
 }

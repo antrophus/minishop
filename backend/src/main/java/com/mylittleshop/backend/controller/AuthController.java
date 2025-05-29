@@ -1,6 +1,8 @@
 package com.mylittleshop.backend.controller;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,7 +57,125 @@ public class AuthController {
     private final EmailService emailService;
 
     /**
-     * 회원가입 API
+     * 이메일 인증 전용 API (회원가입 전 이메일 검증)
+     */
+    @Operation(summary = "이메일 인증 요청", description = "회원가입 전에 이메일 주소를 먼저 인증합니다.")
+    @PostMapping("/email-verification")
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public ResponseEntity<Map<String, Object>> requestEmailVerification(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String name = request.get("name");
+            
+            if (email == null || email.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "이메일을 입력해주세요."));
+            }
+            
+            if (name == null || name.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "이름을 입력해주세요."));
+            }
+            
+            // 이메일 중복 확인
+            if (userService.existsByEmail(email)) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "이미 가입된 이메일입니다.")
+                );
+            }
+            
+            // 임시 사용자 생성 (비밀번호 없이)
+            User tempUser = new User();
+            tempUser.setEmail(email.trim().toLowerCase());
+            tempUser.setUsername(email.trim().toLowerCase());
+            tempUser.setName(name.trim());
+            tempUser.setPassword(passwordEncoder.encode("TEMP_PASSWORD_" + System.currentTimeMillis()));
+            tempUser.setEmailVerified(false);
+            tempUser.setActive(false); // 임시 상태로 비활성화
+            tempUser.setCreatedAt(LocalDateTime.now());
+            tempUser.setUpdatedAt(LocalDateTime.now());
+            
+            User savedUser = userService.save(tempUser);
+            
+            // 이메일 인증 토큰 생성 및 발송 (이메일 발송 실패 시 예외로 트랜잭션 롤백)
+            var emailToken = userService.createEmailVerificationTokenForUser(savedUser, 24 * 60 * 60 * 1000L);
+            
+            // 이메일 발송 - 실패 시 즉시 예외 발생으로 트랜잭션 롤백
+            emailService.sendVerificationEmail(savedUser.getEmail(), emailToken.getToken());
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "인증 이메일이 발송되었습니다.",
+                "email", email
+            ));
+            
+        } catch (RuntimeException e) {
+            // 트랜잭션이 롤백되도록 RuntimeException 재발생
+            throw e; // 트랜잭션 롤백을 위해 예외를 다시 던짐
+        } catch (Exception e) {
+            // 체크된 예외를 RuntimeException으로 변환하여 트랜잭션 롤백
+            throw new RuntimeException("이메일 발송 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 이메일 인증 완료 후 회원가입 완료
+     */
+    @Operation(summary = "회원가입 완료", description = "이메일 인증 완료 후 비밀번호를 설정하여 회원가입을 완료합니다.")
+    @PostMapping("/complete-registration")
+    public ResponseEntity<Map<String, Object>> completeRegistration(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String password = request.get("password");
+            
+            if (email == null || password == null) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "이메일과 비밀번호를 입력해주세요.")
+                );
+            }
+            
+            // 사용자 조회
+            User user = userService.findByEmail(email).orElse(null);
+            if (user == null) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "사용자를 찾을 수 없습니다.")
+                );
+            }
+            
+            // 이메일 인증 확인
+            if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "이메일 인증이 완료되지 않았습니다.")
+                );
+            }
+            
+            // 비밀번호 설정 및 계정 활성화
+            user.setPassword(passwordEncoder.encode(password));
+            user.setActive(true);
+            user.setUpdatedAt(LocalDateTime.now());
+            
+            // 기본 역할 할당
+            userService.assignRole(user.getId(), "ROLE_USER");
+            
+            User updatedUser = userService.save(user);
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "회원가입이 완료되었습니다.",
+                "user", Map.of(
+                    "id", updatedUser.getId(),
+                    "email", updatedUser.getEmail(),
+                    "name", updatedUser.getName()
+                )
+            ));
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                Map.of("success", false, "message", "회원가입 완료 중 오류가 발생했습니다.")
+            );
+        }
+    }
+
+    /**
+     * 회원가입 API (기존 유지)
      */
     @Operation(summary = "회원가입", description = "이메일, 비밀번호, 이름을 입력받아 신규 사용자를 등록합니다. 중복 이메일은 허용되지 않으며, 비밀번호는 암호화되어 저장됩니다.")
     @ApiResponses({
@@ -64,6 +184,7 @@ public class AuthController {
         @ApiResponse(responseCode = "409", description = "이미 존재하는 이메일")
     })
     @PostMapping("/register")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<UserRegistrationResponse> register(@Valid @RequestBody UserRegistrationRequest request) {
         // User 엔티티 생성
         User user = new User();
@@ -81,9 +202,14 @@ public class AuthController {
         UserProfile profile = null;
 
         User saved = userService.registerUser(user, profile);
-        // 이메일 인증 토큰 발급 및 메일 발송
+        // 이메일 인증 토큰 발급 및 메일 발송 (이메일 발송 실패 시 트랜잭션 롤백)
         var emailToken = userService.createEmailVerificationTokenForUser(saved, 24 * 60 * 60 * 1000L); // 24시간 유효
-        emailService.sendVerificationEmail(saved.getEmail(), emailToken.getToken());
+        try {
+            emailService.sendVerificationEmail(saved.getEmail(), emailToken.getToken());
+        } catch (Exception emailError) {
+            // 이메일 발송 실패 시 RuntimeException을 던져서 트랜잭션 롤백
+            throw new RuntimeException("이메일 발송에 실패했습니다: " + emailError.getMessage(), emailError);
+        }
         UserRegistrationResponse response = new UserRegistrationResponse(
                 saved.getId(),
                 saved.getEmail(),
@@ -120,6 +246,11 @@ public class AuthController {
         if (Boolean.TRUE.equals(user.getLocked())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("계정이 잠겨 있습니다. 관리자에게 문의하세요.");
         }
+        
+        // 이메일 인증 확인 (선택사항: 이메일 미인증 시 로그인 차단하려면 주석 해제)
+        // if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+        //     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 인증이 필요합니다. 이메일을 확인해 주세요.");
+        // }
         // 로그인 성공 처리
         userService.recordLogin(user.getId());
         String token = jwtTokenProvider.generateToken(user.getUsername(),
@@ -150,6 +281,16 @@ public class AuthController {
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<String> handleUserAlreadyExists(UserAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    /**
+     * 이메일 발송 실패 등 RuntimeException 처리
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+            Map.of("success", false, "message", "처리 중 오류가 발생했습니다: " + ex.getMessage())
+        );
     }
 
     /**
@@ -250,16 +391,124 @@ public class AuthController {
 
     @GetMapping("/verify-email")
     public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
-        var tokenOpt = userService.validateEmailVerificationToken(token);
-        if (tokenOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("토큰이 유효하지 않거나 만료되었습니다.");
+        try {
+            var tokenOpt = userService.validateEmailVerificationToken(token);
+            if (tokenOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createHtmlResponse(false, "인증 실패", 
+                              "인증 링크가 유효하지 않거나 만료되었습니다. 새로운 인증 이메일을 요청해 주세요."));
+            }
+            
+            EmailVerificationToken emailToken = tokenOpt.get();
+            User user = emailToken.getUser();
+            
+            // 이미 인증된 사용자인지 확인
+            if (Boolean.TRUE.equals(user.getEmailVerified())) {
+                return ResponseEntity.ok(createHtmlResponse(true, "이미 인증 완료", 
+                        "이미 이메일 인증이 완료된 계정입니다. 로그인하여 서비스를 이용해 주세요."));
+            }
+            
+            // 사용자 인증 처리
+            userService.markEmailVerificationTokenAsUsed(emailToken);
+            userService.verifyEmail(user.getId());
+            
+            // 환영 이메일 발송 (비동기로 처리 권장)
+            try {
+                emailService.sendWelcomeEmail(user.getEmail(), user.getName());
+            } catch (Exception e) {
+                // log.warn("환영 이메일 발송 실패: {}", user.getEmail(), e);
+            }
+            
+            return ResponseEntity.ok(createHtmlResponse(true, "이메일 인증 완료!", 
+                    user.getName() + "님, 이메일 인증이 성공적으로 완료되었습니다. My Little Shop에 오신 것을 환영합니다!"));
+                    
+        } catch (Exception e) {
+            // log.error("이메일 인증 처리 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createHtmlResponse(false, "시스템 오류", 
+                          "이메일 인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
         }
-        EmailVerificationToken emailToken = tokenOpt.get();
-        // 사용자 인증 처리
-        var user = emailToken.getUser();
-        userService.markEmailVerificationTokenAsUsed(emailToken);
-        userService.verifyEmail(user.getId());
-        return ResponseEntity.ok("이메일 인증이 완료되었습니다.");
+    }
+
+    /**
+     * 이메일 인증 재발송 API
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerificationEmail(@RequestParam("email") String email) {
+        try {
+            EmailVerificationToken token = userService.resendEmailVerification(email);
+            emailService.sendVerificationEmail(email, token.getToken());
+            return ResponseEntity.ok("인증 이메일이 재발송되었습니다.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("이메일 재발송 중 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 이메일 인증 상태 확인 API
+     */
+    @GetMapping("/verification-status")
+    public ResponseEntity<Map<String, Object>> checkVerificationStatus(@RequestParam("email") String email) {
+        try {
+            User user = userService.findByEmail(email).orElse(null);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("email", email);
+            response.put("verified", user.getEmailVerified());
+            response.put("verifiedAt", user.getEmailVerifiedAt());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * HTML 응답 생성 헬퍼 메서드
+     */
+    private String createHtmlResponse(boolean success, String title, String message) {
+        String iconClass = success ? "✅" : "❌";
+        String colorClass = success ? "#28a745" : "#dc3545";
+        String buttonText = success ? "로그인하러 가기" : "다시 시도하기";
+        String buttonUrl = success ? "http://localhost:5173/login" : "http://localhost:5173/register";
+        
+        return String.format("""
+            <!DOCTYPE html>
+            <html lang="ko">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>%s</title>
+                <style>
+                    body { font-family: 'Malgun Gothic', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); margin: 0; padding: 20px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+                    .container { background: white; padding: 50px 40px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center; max-width: 500px; width: 100%%; }
+                    .icon { font-size: 80px; margin-bottom: 20px; }
+                    .title { color: %s; font-size: 28px; font-weight: bold; margin-bottom: 20px; }
+                    .message { color: #666; font-size: 18px; line-height: 1.6; margin-bottom: 40px; }
+                    .button { display: inline-block; background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; transition: transform 0.3s; }
+                    .button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,123,255,0.3); }
+                    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="icon">%s</div>
+                    <h1 class="title">%s</h1>
+                    <p class="message">%s</p>
+                    <a href="%s" class="button">%s</a>
+                    <div class="footer">
+                        <p>&copy; 2025 My Little Shop</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """, title, colorClass, iconClass, title, message, buttonUrl, buttonText);
     }
 
     // 추가적인 인증/예외 처리 핸들러 등 필요시 구현
