@@ -38,10 +38,11 @@ export interface EmailVerificationRequest {
 }
 
 // 회원가입 완료 요청 타입
-export interface CompleteRegistrationRequest {
+export type CompleteRegistrationRequest = {
   email: string;
   password: string;
-}
+  name: string;
+};
 
 // 이메일 인증 상태 응답 타입
 export interface EmailVerificationStatus {
@@ -167,6 +168,13 @@ class ApiClient {
       }),
     });
   }
+
+  // 사용자 정보 조회
+  async getUserInfo(email: string): Promise<ApiResponse<{email: string, name: string, emailVerified: boolean}>> {
+    return this.request<{email: string, name: string, emailVerified: boolean}>(`/auth/user-info?email=${encodeURIComponent(email)}`, {
+      method: 'GET',
+    });
+  }
 }
 // API 클라이언트 인스턴스 생성
 export const apiClient = new ApiClient(API_BASE_URL);
@@ -179,4 +187,5 @@ export const authApi = {
   checkEmailVerification: (email: string) => apiClient.checkEmailVerification(email),
   resendEmailVerification: (email: string) => apiClient.resendEmailVerification(email),
   signIn: (emailOrUsername: string, password: string) => apiClient.signIn(emailOrUsername, password),
+  getUserInfo: (email: string) => apiClient.getUserInfo(email),
 };

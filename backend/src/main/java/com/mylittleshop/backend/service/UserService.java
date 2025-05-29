@@ -241,8 +241,13 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         
+        // Role이 없으면 생성
         Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                .orElseGet(() -> {
+                    Role newRole = new Role();
+                    newRole.setName(roleName);
+                    return roleRepository.save(newRole);
+                });
         
         user.addRole(role);
         userRepository.save(user);
@@ -413,11 +418,11 @@ public class UserService {
     }
 
     /**
-     * 이메일 인증 토큰 검증
+     * 이메일 인증 토큰 검증 (User 함께 로드)
      */
     @Transactional(readOnly = true)
     public Optional<EmailVerificationToken> validateEmailVerificationToken(String tokenValue) {
-        return emailVerificationTokenRepository.findByToken(tokenValue)
+        return emailVerificationTokenRepository.findByTokenWithUser(tokenValue)
                 .filter(token -> !token.isUsed())
                 .filter(token -> token.getExpiresAt().isAfter(java.time.LocalDateTime.now()));
     }

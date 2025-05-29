@@ -93,7 +93,9 @@ public class AuthController {
             tempUser.setCreatedAt(LocalDateTime.now());
             tempUser.setUpdatedAt(LocalDateTime.now());
             
+            System.out.println("임시 사용자 생성 전 - name: " + tempUser.getName());
             User savedUser = userService.save(tempUser);
+            System.out.println("임시 사용자 생성 후 - name: " + savedUser.getName());
             
             // 이메일 인증 토큰 생성 및 발송 (이메일 발송 실패 시 예외로 트랜잭션 롤백)
             var emailToken = userService.createEmailVerificationTokenForUser(savedUser, 24 * 60 * 60 * 1000L);
@@ -125,6 +127,7 @@ public class AuthController {
         try {
             String email = request.get("email");
             String password = request.get("password");
+            String name = request.get("name"); // name 파라미터 추가
             
             if (email == null || password == null) {
                 return ResponseEntity.badRequest().body(
@@ -140,6 +143,8 @@ public class AuthController {
                 );
             }
             
+            System.out.println("비밀번호 설정 시 조회된 사용자 - name: " + user.getName() + ", email: " + user.getEmail());
+            
             // 이메일 인증 확인
             if (!Boolean.TRUE.equals(user.getEmailVerified())) {
                 return ResponseEntity.badRequest().body(
@@ -152,8 +157,20 @@ public class AuthController {
             user.setActive(true);
             user.setUpdatedAt(LocalDateTime.now());
             
-            // 기본 역할 할당
-            userService.assignRole(user.getId(), "ROLE_USER");
+            // name이 전달되었고 현재 name이 null이거나 비어있으면 업데이트
+            if (name != null && !name.trim().isEmpty() && 
+                (user.getName() == null || user.getName().trim().isEmpty())) {
+                user.setName(name.trim());
+                System.out.println("이름 업데이트: " + name.trim());
+            }
+            
+            // 기본 역할 할당 (안전하게 처리)
+            try {
+                userService.assignRole(user.getId(), "ROLE_USER");
+            } catch (Exception roleError) {
+                // Role이 없어도 회원가입은 완료되도록 처리
+                System.out.println("Role 할당 실패, 하지만 회원가입은 완료됨: " + roleError.getMessage());
+            }
             
             User updatedUser = userService.save(user);
             
@@ -170,6 +187,40 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 Map.of("success", false, "message", "회원가입 완료 중 오류가 발생했습니다.")
+            );
+        }
+    }
+
+    /**
+     * 이메일로 사용자 기본 정보 조회 (회원가입 프로세스용)
+     */
+    @Operation(summary = "사용자 기본 정보 조회", description = "이메일로 사용자의 기본 정보를 조회합니다.")
+    @GetMapping("/user-info")
+    public ResponseEntity<Map<String, Object>> getUserInfo(@RequestParam String email) {
+        try {
+            System.out.println("사용자 정보 조회 요청 - 이메일: " + email);
+            User user = userService.findByEmail(email).orElse(null);
+            if (user == null) {
+                System.out.println("사용자를 찾을 수 없음 - 이메일: " + email);
+                return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "사용자를 찾을 수 없습니다.")
+                );
+            }
+            
+            System.out.println("사용자 정보 조회 성공 - 이름: '" + user.getName() + "', 이메일: '" + user.getEmail() + "'");
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", Map.of(
+                    "email", user.getEmail(),
+                    "name", user.getName() != null ? user.getName() : "",
+                    "emailVerified", user.getEmailVerified()
+                )
+            ));
+        } catch (Exception e) {
+            System.out.println("사용자 정보 조회 중 오류 발생: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                Map.of("success", false, "message", "서버 오류가 발생했습니다: " + e.getMessage())
             );
         }
     }
@@ -416,14 +467,16 @@ public class AuthController {
             try {
                 emailService.sendWelcomeEmail(user.getEmail(), user.getName());
             } catch (Exception e) {
-                // log.warn("환영 이메일 발송 실패: {}", user.getEmail(), e);
+                System.out.println("환영 이메일 발송 실패: " + user.getEmail() + ", 오류: " + e.getMessage());
             }
             
             return ResponseEntity.ok(createHtmlResponse(true, "이메일 인증 완료!", 
-                    user.getName() + "님, 이메일 인증이 성공적으로 완료되었습니다. My Little Shop에 오신 것을 환영합니다!"));
+                    user.getName() + "님, 이메일 인증이 성공적으로 완료되었습니다. My Little Shop에 오신 것을 환영합니다!", 
+                    user.getEmail())); // 이메일 정보 전달
                     
         } catch (Exception e) {
-            // log.error("이메일 인증 처리 중 오류 발생", e);
+            System.out.println("이메일 인증 처리 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(createHtmlResponse(false, "시스템 오류", 
                           "이메일 인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
@@ -475,8 +528,50 @@ public class AuthController {
     private String createHtmlResponse(boolean success, String title, String message) {
         String iconClass = success ? "✅" : "❌";
         String colorClass = success ? "#28a745" : "#dc3545";
-        String buttonText = success ? "로그인하러 가기" : "다시 시도하기";
-        String buttonUrl = success ? "http://localhost:5173/login" : "http://localhost:5173/register";
+        String buttonText = success ? "비밀번호 설정하기" : "다시 시도하기";
+        String buttonUrl = success ? "http://localhost:3000/account/signup" : "http://localhost:3000/account/signup";
+        
+        return String.format("""
+            <!DOCTYPE html>
+            <html lang="ko">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>%s</title>
+                <style>
+                    body { font-family: 'Malgun Gothic', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); margin: 0; padding: 20px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+                    .container { background: white; padding: 50px 40px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center; max-width: 500px; width: 100%%; }
+                    .icon { font-size: 80px; margin-bottom: 20px; }
+                    .title { color: %s; font-size: 28px; font-weight: bold; margin-bottom: 20px; }
+                    .message { color: #666; font-size: 18px; line-height: 1.6; margin-bottom: 40px; }
+                    .button { display: inline-block; background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; transition: transform 0.3s; }
+                    .button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,123,255,0.3); }
+                    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="icon">%s</div>
+                    <h1 class="title">%s</h1>
+                    <p class="message">%s</p>
+                    <a href="%s" class="button">%s</a>
+                    <div class="footer">
+                        <p>&copy; 2025 My Little Shop</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """, title, colorClass, iconClass, title, message, buttonUrl, buttonText);
+    }
+
+    /**
+     * 이메일 정보를 포함한 HTML 응답 생성 헬퍼 메서드 (회원가입 완료용)
+     */
+    private String createHtmlResponse(boolean success, String title, String message, String email) {
+        String iconClass = success ? "✅" : "❌";
+        String colorClass = success ? "#28a745" : "#dc3545";
+        String buttonText = success ? "비밀번호 설정하기" : "다시 시도하기";
+        String buttonUrl = success ? "http://localhost:3000/account/signup?email=" + email + "&verified=true" : "http://localhost:3000/account/signup";
         
         return String.format("""
             <!DOCTYPE html>

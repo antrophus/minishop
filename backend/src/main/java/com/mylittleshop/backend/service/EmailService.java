@@ -154,6 +154,9 @@ public class EmailService {
      * @return HTML 내용
      */
     private String createWelcomeEmailContent(String username) {
+        // username이 null이거나 빈 값일 경우 기본값 사용
+        String displayName = (username != null && !username.trim().isEmpty()) ? username : "회원";
+        
         return String.format("""
             <!DOCTYPE html>
             <html lang="ko">
@@ -189,7 +192,7 @@ public class EmailService {
                             <li>💰 적립금 및 혜택 받기</li>
                         </ul>
                         <div class="button-container">
-                            <a href="http://localhost:5173" class="shop-button">🛍️ 쇼핑 시작하기</a>
+                            <a href="http://localhost:3000" class="shop-button">🛍️ 쇼핑 시작하기</a>
                         </div>
                     </div>
                     <div class="footer">
@@ -199,6 +202,6 @@ public class EmailService {
                 </div>
             </body>
             </html>
-            """, username);
+            """, displayName);
     }
 }

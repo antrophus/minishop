@@ -28,6 +28,49 @@ export default function SignUpPage() {
     agreeMarketing: false
   });
 
+  // URL 파라미터 확인 (이메일 인증 완료 후 리다이렉트)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email');
+    const verifiedParam = urlParams.get('verified');
+    
+    if (emailParam && verifiedParam === 'true') {
+      // 이메일 인증이 완료된 상태로 접근
+      setUserData(prev => ({ ...prev, email: emailParam }));
+      setIsEmailVerified(true);
+      setCurrentStep('password');
+      setSuccessMessage('이메일 인증이 완료되었습니다! 비밀번호를 설정해주세요.');
+      
+      // 사용자 정보 가져오기 (이름 정보 포함)
+      const fetchUserInfo = async () => {
+        try {
+          console.log('사용자 정보 조회 시작:', emailParam);
+          const response = await authApi.getUserInfo(emailParam);
+          console.log('사용자 정보 조회 응답:', response);
+          if (response.success && response.data) {
+            console.log('받은 사용자 데이터:', response.data);
+            // API 응답 구조 확인: response.data.data에 실제 사용자 정보가 있을 수 있음
+            const userData = response.data.data || response.data;
+            console.log('실제 사용자 데이터:', userData);
+            setUserData(prev => ({ 
+              ...prev, 
+              email: emailParam,
+              name: userData?.name || ''
+            }));
+            console.log('업데이트된 userData:', { 
+              email: emailParam,
+              name: userData?.name || ''
+            });
+          }
+        } catch (error) {
+          console.error('사용자 정보 조회 실패:', error);
+        }
+      };
+      
+      fetchUserInfo();
+    }
+  }, []);
+
   // 인증 확인 타이머
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -160,9 +203,11 @@ export default function SignUpPage() {
       const response = await authApi.completeRegistration({
         email: userData.email,
         password: userData.password,
+        name: userData.name, // name도 함께 전달
       });
 
       if (response.success) {
+        console.log('회원가입 완료 성공, 현재 userData:', userData);
         setCurrentStep('success');
       } else {
         setErrorMessage(response.error || response.data?.message || '회원가입 완료에 실패했습니다.');
@@ -201,7 +246,21 @@ export default function SignUpPage() {
         </p>
       </div>
 
-      {/* 메시지 표시 */}
+      {/* 성공 메시지 표시 */}
+      {successMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-green-50 border border-green-200 rounded-xl p-4"
+        >
+          <div className="flex items-center space-x-2">
+            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <p className="text-green-700 text-sm">{successMessage}</p>
+          </div>
+        </motion.div>
+      )}
       {errorMessage && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -357,9 +416,9 @@ export default function SignUpPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="text-3xl font-bold">이메일 인증 완료!</h1>
+        <h1 className="text-3xl font-bold">비밀번호 설정</h1>
         <p className="text-gray-600">
-          이제 비밀번호를 설정해주세요
+          {userData.name ? `${userData.name}님, ` : ''}마지막 단계입니다!
         </p>
       </div>
 
@@ -532,9 +591,15 @@ export default function SignUpPage() {
           회원가입 완료! 🎉
         </h1>
         <p className="text-gray-600 leading-relaxed">
-          <span className="font-semibold text-gray-900">{userData.name}</span>님,<br />
+          <span className="font-semibold text-gray-900">
+            {userData.name || '회원'}
+          </span>님,<br />
           My Little Shop에 오신 것을 환영합니다!
         </p>
+        {/* 디버깅용 정보 표시 */}
+        <div className="text-xs text-gray-400 mt-2">
+          디버그: 이름="{userData.name}", 이메일="{userData.email}"
+        </div>
       </div>
 
       {/* 액션 버튼들 */}

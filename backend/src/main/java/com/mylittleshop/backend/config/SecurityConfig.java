@@ -72,6 +72,7 @@ public class SecurityConfig {
                     "/auth/verify-email",          // 이메일 인증 (추가)
                     "/auth/resend-verification",   // 이메일 재발송 (추가)
                     "/auth/verification-status",   // 인증 상태 확인 (추가)
+                    "/auth/user-info",             // 사용자 정보 조회 (추가)
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/swagger-resources/**",
