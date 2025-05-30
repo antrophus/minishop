@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import ConditionalNavWrapper from "@/components/ConditionalNavWrapper";
+import { ApiConfigDebugger } from "@/components/ApiConfigDebugger";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +24,8 @@ export default function RootLayout({
             {children}
           </ConditionalNavWrapper>
         </div>
+        {/* 개발 환경에서만 표시되는 API 설정 디버거 */}
+        <ApiConfigDebugger />
       </body>
     </html>
   );

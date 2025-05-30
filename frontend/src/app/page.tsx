@@ -2,6 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { CategoryUtils } from '@/lib/categories';
 
 export default function Home() {
   const featuredProducts = [
@@ -20,6 +21,9 @@ export default function Home() {
     // 더미 데이터
   ];
 
+  // 카테고리 데이터 가져오기 (전체 제외)
+  const categories = CategoryUtils.getAllCategories().filter(cat => cat.id !== 'all');
+
   return (
     <div className="p-4">
       {/* 온보딩 배너 */}
@@ -33,14 +37,16 @@ export default function Home() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4">카테고리</h2>
         <div className="grid grid-cols-4 gap-4">
-          {['여성복', '남성복', '액세서리', '신발'].map((category) => (
+          {(categories || []).map((category) => (
             <Link
-              key={category}
-              href={`/shop?category=${category}`}
+              key={category.id}
+              href={`/category/${category.slug}`}
               className="flex flex-col items-center"
             >
-              <div className="w-16 h-16 rounded-full bg-gray-200 mb-2" />
-              <span className="text-sm">{category}</span>
+              <div className="w-16 h-16 rounded-full bg-gray-200 mb-2 flex items-center justify-center text-2xl">
+                {category.icon}
+              </div>
+              <span className="text-sm text-center">{category.name}</span>
             </Link>
           ))}
         </div>
@@ -50,7 +56,7 @@ export default function Home() {
       <section>
         <h2 className="text-xl font-semibold mb-4">추천 상품</h2>
         <div className="grid grid-cols-2 gap-4">
-          {featuredProducts.map((product) => (
+          {(featuredProducts || []).map((product) => (
             <Link key={product.id} href={`/product/${product.id}`}>
               <div className="rounded-lg overflow-hidden">
                 <div className="aspect-square relative bg-gray-200">

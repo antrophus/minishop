@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { authApiClient } from '@/lib/api';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -20,15 +21,12 @@ export default function VerifyEmailPage() {
       return;
     }
 
-    // 백엔드 API 호출 - 브라우저가 직접 백엔드의 HTML 응답을 받도록 함
+    // 새로운 API 클라이언트 사용
     const verifyEmail = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/auth/verify-email?token=${token}`, {
-          method: 'GET',
-          credentials: 'include'
-        });
+        const response = await authApiClient.get(`/verify-email?token=${token}`);
 
-        if (response.ok) {
+        if (response.success) {
           setStatus('success');
           setMessage('이메일 인증이 완료되었습니다!');
           
@@ -37,9 +35,8 @@ export default function VerifyEmailPage() {
             router.push('/account/signin?verified=true');
           }, 3000);
         } else {
-          const errorText = await response.text();
           setStatus('error');
-          setMessage(errorText || '인증에 실패했습니다.');
+          setMessage(response.error || '인증에 실패했습니다.');
         }
       } catch (error) {
         console.error('이메일 인증 오류:', error);

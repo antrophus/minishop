@@ -606,5 +606,197 @@ public class AuthController {
             """, title, colorClass, iconClass, title, message, buttonUrl, buttonText);
     }
 
-    // 추가적인 인증/예외 처리 핸들러 등 필요시 구현
+    /**
+     * 현재 인증된 사용자의 프로필 정보 조회
+     */
+    @Operation(summary = "현재 사용자 프로필 조회", description = "JWT 토큰을 통해 현재 인증된 사용자의 프로필 정보를 조회합니다.")
+    @GetMapping("/profile")
+    public ResponseEntity<Map<String, Object>> getCurrentUserProfile() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    Map.of("success", false, "message", "인증이 필요합니다.")
+                );
+            }
+
+            String username;
+            if (authentication.getPrincipal() instanceof UserDetails userDetails) {
+                username = userDetails.getUsername();
+            } else {
+                username = authentication.getName();
+            }
+
+            User user = userService.findByEmailOrUsername(username).orElse(null);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    Map.of("success", false, "message", "사용자를 찾을 수 없습니다.")
+                );
+            }
+
+            Map<String, Object> userProfile = new HashMap<>();
+            userProfile.put("id", user.getId());
+            userProfile.put("email", user.getEmail());
+            userProfile.put("username", user.getUsername());
+            userProfile.put("name", user.getName());
+            userProfile.put("phone", user.getPhone());
+            userProfile.put("address", user.getAddress());
+            userProfile.put("gender", user.getGender());
+            userProfile.put("emailVerified", user.getEmailVerified());
+            userProfile.put("active", user.getActive());
+            userProfile.put("createdAt", user.getCreatedAt());
+            userProfile.put("lastLoginAt", user.getLastLoginAt());
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", userProfile
+            ));
+
+        } catch (Exception e) {
+            System.out.println("프로필 조회 중 오류 발생: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                Map.of("success", false, "message", "서버 오류가 발생했습니다.")
+            );
+        }
+    }
+
+    /**
+     * 테스트용 사용자 생성 및 즉시 활성화 (개발 환경에서만 사용)
+     */
+    @PostMapping("/create-test-user")
+    public ResponseEntity<Map<String, Object>> createTestUser(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String password = request.get("password");
+            String name = request.get("name");
+            
+            if (email == null || password == null || name == null) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("success", false, "message", "이메일, 비밀번호, 이름을 모두 입력해주세요.")
+                );
+            }
+            
+            // 이미 존재하는 사용자인지 확인
+            if (userService.existsByEmail(email)) {
+                User existingUser = userService.findByEmail(email).orElse(null);
+                if (existingUser != null) {
+                    // 기존 사용자를 활성화 및 비밀번호 설정
+                    existingUser.setPassword(passwordEncoder.encode(password));
+                    existingUser.setEmailVerified(true);
+                    existingUser.setActive(true);
+                    existingUser.setUpdatedAt(LocalDateTime.now());
+                    userService.save(existingUser);
+                    
+                    return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "기존 사용자가 활성화되었습니다.",
+                        "user", Map.of(
+                            "id", existingUser.getId(),
+                            "email", existingUser.getEmail(),
+                            "name", existingUser.getName()
+                        )
+                    ));
+                }
+            }
+            
+            // 새 사용자 생성
+            User user = new User();
+            user.setEmail(email.trim().toLowerCase());
+            user.setUsername(email.trim().toLowerCase());
+            user.setName(name.trim());
+            user.setPassword(passwordEncoder.encode(password));
+            user.setEmailVerified(true);
+            user.setActive(true);
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+            
+            User savedUser = userService.save(user);
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "테스트 사용자가 생성되었습니다.",
+                "user", Map.of(
+                    "id", savedUser.getId(),
+                    "email", savedUser.getEmail(),
+                    "name", savedUser.getName()
+                )
+            ));
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                Map.of("success", false, "message", "사용자 생성 중 오류가 발생했습니다: " + e.getMessage())
+            );
+        }
+    }
+
+    /**
+     * 현재 인증된 사용자의 프로필 정보 업데이트
+     */
+    @Operation(summary = "현재 사용자 프로필 업데이트", description = "JWT 토큰을 통해 현재 인증된 사용자의 프로필 정보를 업데이트합니다.")
+    @PostMapping("/profile")
+    public ResponseEntity<Map<String, Object>> updateCurrentUserProfile(@RequestBody Map<String, Object> profileData) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    Map.of("success", false, "message", "인증이 필요합니다.")
+                );
+            }
+
+            String username;
+            if (authentication.getPrincipal() instanceof UserDetails userDetails) {
+                username = userDetails.getUsername();
+            } else {
+                username = authentication.getName();
+            }
+
+            User user = userService.findByEmailOrUsername(username).orElse(null);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    Map.of("success", false, "message", "사용자를 찾을 수 없습니다.")
+                );
+            }
+
+            // 프로필 정보 업데이트 (이메일은 제외)
+            if (profileData.containsKey("name") && profileData.get("name") != null) {
+                user.setName(profileData.get("name").toString().trim());
+            }
+            if (profileData.containsKey("phone")) {
+                user.setPhone(profileData.get("phone") != null ? profileData.get("phone").toString().trim() : null);
+            }
+            if (profileData.containsKey("address")) {
+                user.setAddress(profileData.get("address") != null ? profileData.get("address").toString().trim() : null);
+            }
+            if (profileData.containsKey("gender")) {
+                user.setGender(profileData.get("gender") != null ? profileData.get("gender").toString().trim() : null);
+            }
+            
+            user.setUpdatedAt(LocalDateTime.now());
+            User updatedUser = userService.save(user);
+
+            Map<String, Object> userProfile = new HashMap<>();
+            userProfile.put("id", updatedUser.getId());
+            userProfile.put("email", updatedUser.getEmail());
+            userProfile.put("username", updatedUser.getUsername());
+            userProfile.put("name", updatedUser.getName());
+            userProfile.put("phone", updatedUser.getPhone());
+            userProfile.put("address", updatedUser.getAddress());
+            userProfile.put("gender", updatedUser.getGender());
+            userProfile.put("emailVerified", updatedUser.getEmailVerified());
+            userProfile.put("active", updatedUser.getActive());
+            userProfile.put("updatedAt", updatedUser.getUpdatedAt());
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "프로필이 성공적으로 업데이트되었습니다.",
+                "data", userProfile
+            ));
+
+        } catch (Exception e) {
+            System.out.println("프로필 업데이트 중 오류 발생: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                Map.of("success", false, "message", "서버 오류가 발생했습니다.")
+            );
+        }
+    }
 } 

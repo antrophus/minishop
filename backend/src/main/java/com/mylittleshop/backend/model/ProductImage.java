@@ -32,6 +32,8 @@ public class ProductImage {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
+    // alt 필드 제거 (DB 스키마에 없음)
+    
     public ProductImage(String url) {
         this.url = url;
     }

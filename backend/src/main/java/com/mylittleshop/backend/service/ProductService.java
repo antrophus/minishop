@@ -69,7 +69,12 @@ public class ProductService {
     }
     
     public List<Product> findByStatusAndIsActive(ProductStatus status, Boolean isActive) {
-        return productRepository.findByStatusAndIsActive(status, isActive);
+        // JOIN FETCH를 사용하여 Lazy Loading 문제 해결
+        return productRepository.findByStatusAndIsActiveWithCategoryAndImages(status, isActive);
+    }
+    
+    public Page<Product> findByStatusAndIsActive(ProductStatus status, Boolean isActive, Pageable pageable) {
+        return productRepository.findByStatusAndIsActive(status, isActive, pageable);
     }
     
     public List<Product> findByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
@@ -352,5 +357,34 @@ public class ProductService {
                     newContent.setVersion(1);
                     return productContentRepository.save(newContent);
                 });
+    }
+   
+    // 상태와 활성화 여부로 상품 조회 (페이징)
+    
+    // 카테고리와 상태, 활성화 여부로 상품 조회 (페이징)
+    public Page<Product> findByCategoryAndStatusAndIsActive(ProductCategory category, ProductStatus status, Boolean isActive, Pageable pageable) {
+        return productRepository.findByCategoryAndStatusAndIsActive(category, status, isActive, pageable);
+    }
+    
+    // 상품 검색 (페이징)
+    public Page<Product> searchProducts(String keyword, Pageable pageable) {
+        return productRepository.findByNameContainingIgnoreCase(keyword, pageable);
+    }
+    
+    // 특별 상품 조회 (페이징)
+    public Page<Product> findFeaturedProducts(Pageable pageable) {
+        return productRepository.findByFeaturedTrueAndStatusAndIsActive(ProductStatus.ACTIVE, true, pageable);
+    }
+    
+    public Page<Product> findBestsellerProducts(Pageable pageable) {
+        return productRepository.findByBestsellerTrueAndStatusAndIsActive(ProductStatus.ACTIVE, true, pageable);
+    }
+    
+    public Page<Product> findNewArrivals(Pageable pageable) {
+        return productRepository.findByNewArrivalTrueAndStatusAndIsActive(ProductStatus.ACTIVE, true, pageable);
+    }
+    
+    public Page<Product> findDiscountedProducts(Pageable pageable) {
+        return productRepository.findByOriginalGmPriceIsNotNullAndStatusAndIsActive(ProductStatus.ACTIVE, true, pageable);
     }
 }

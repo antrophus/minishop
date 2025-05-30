@@ -1,5 +1,7 @@
 // API 기본 설정
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+import { API_CONFIG, AUTH_ENDPOINTS, createAuthUrl } from './api/config';
+
+const API_BASE_URL = API_CONFIG.AUTH_URL; // 인증 API는 별도 URL 사용
 
 // API 응답 타입 정의
 export interface ApiResponse<T = any> {
@@ -7,6 +9,12 @@ export interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   error?: string;
+}
+
+// 백엔드 프로필 API 응답 타입 (중첩 구조)
+export interface ProfileApiResponse {
+  success: boolean;
+  data: UserProfile;
 }
 
 // 회원가입 요청 타입
@@ -44,11 +52,30 @@ export type CompleteRegistrationRequest = {
   name: string;
 };
 
-// 이메일 인증 상태 응답 타입
-export interface EmailVerificationStatus {
+// 사용자 프로필 타입
+export interface UserProfile {
+  id: number;
   email: string;
-  verified: boolean;
-  verifiedAt?: string;
+  username: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  gender?: string;
+  emailVerified: boolean;
+  active: boolean;
+  createdAt: string;
+  lastLoginAt?: string;
+}
+
+// 로그인 응답 타입 (백엔드 UserLoginResponse와 일치)
+export interface SignInResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  userId: number;
+  email: string;
+  username: string;
+  name: string;
 }
 // API 요청 함수
 class ApiClient {
@@ -71,6 +98,15 @@ class ApiClient {
         },
         ...options,
       };
+
+      // JWT 토큰이 필요한 API에 자동으로 토큰 추가
+      const token = this.getAuthToken();
+      if (token && this.isAuthRequiredEndpoint(endpoint)) {
+        config.headers = {
+          ...config.headers,
+          'Authorization': `Bearer ${token}`,
+        };
+      }
 
       const response = await fetch(url, config);
       
@@ -115,9 +151,21 @@ class ApiClient {
       };
     }
   }
+
+  // JWT 토큰 가져오기
+  private getAuthToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('authToken');
+  }
+
+  // 인증이 필요한 엔드포인트인지 확인
+  private isAuthRequiredEndpoint(endpoint: string): boolean {
+    const authRequiredEndpoints = ['/auth/profile', '/auth/password'];
+    return authRequiredEndpoints.some(path => endpoint.includes(path));
+  }
   // 이메일 인증 요청 (회원가입 전)
   async requestEmailVerification(data: EmailVerificationRequest): Promise<ApiResponse<any>> {
-    return this.request<any>('/auth/email-verification', {
+    return this.request<any>(AUTH_ENDPOINTS.EMAIL_VERIFICATION, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -125,7 +173,7 @@ class ApiClient {
 
   // 회원가입 완료 (이메일 인증 후)
   async completeRegistration(data: CompleteRegistrationRequest): Promise<ApiResponse<any>> {
-    return this.request<any>('/auth/complete-registration', {
+    return this.request<any>(AUTH_ENDPOINTS.COMPLETE_REGISTRATION, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -133,7 +181,7 @@ class ApiClient {
 
   // 회원가입 (기존 방식)
   async signUp(userData: SignUpRequest): Promise<ApiResponse<SignUpResponse>> {
-    return this.request<SignUpResponse>('/auth/register', {
+    return this.request<SignUpResponse>(AUTH_ENDPOINTS.REGISTER, {
       method: 'POST',
       body: JSON.stringify({
         ...userData,
@@ -144,12 +192,12 @@ class ApiClient {
 
   // 이메일 인증 상태 확인
   async checkEmailVerification(email: string): Promise<ApiResponse<EmailVerificationStatus>> {
-    return this.request<EmailVerificationStatus>(`/auth/verification-status?email=${encodeURIComponent(email)}`);
+    return this.request<EmailVerificationStatus>(`${AUTH_ENDPOINTS.VERIFICATION_STATUS}?email=${encodeURIComponent(email)}`);
   }
 
   // 이메일 인증 재발송
   async resendEmailVerification(email: string): Promise<ApiResponse<string>> {
-    return this.request<string>('/auth/resend-verification', {
+    return this.request<string>(AUTH_ENDPOINTS.RESEND_VERIFICATION, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -159,8 +207,8 @@ class ApiClient {
   }
 
   // 로그인
-  async signIn(emailOrUsername: string, password: string): Promise<ApiResponse<any>> {
-    return this.request<any>('/auth/login', {
+  async signIn(emailOrUsername: string, password: string): Promise<ApiResponse<SignInResponse>> {
+    return this.request<SignInResponse>(AUTH_ENDPOINTS.LOGIN, {
       method: 'POST',
       body: JSON.stringify({
         emailOrUsername,
@@ -171,8 +219,23 @@ class ApiClient {
 
   // 사용자 정보 조회
   async getUserInfo(email: string): Promise<ApiResponse<{email: string, name: string, emailVerified: boolean}>> {
-    return this.request<{email: string, name: string, emailVerified: boolean}>(`/auth/user-info?email=${encodeURIComponent(email)}`, {
+    return this.request<{email: string, name: string, emailVerified: boolean}>(`${AUTH_ENDPOINTS.USER_INFO}?email=${encodeURIComponent(email)}`, {
       method: 'GET',
+    });
+  }
+
+  // 현재 사용자 프로필 조회 (JWT 토큰 필요)
+  async getCurrentUserProfile(): Promise<ApiResponse<UserProfile>> {
+    return this.request<UserProfile>(AUTH_ENDPOINTS.PROFILE, {
+      method: 'GET',
+    });
+  }
+
+  // 현재 사용자 프로필 업데이트 (JWT 토큰 필요)
+  async updateCurrentUserProfile(profileData: Partial<Pick<UserProfile, 'name' | 'phone' | 'address' | 'gender'>>): Promise<ApiResponse<UserProfile>> {
+    return this.request<UserProfile>(AUTH_ENDPOINTS.PROFILE, {
+      method: 'POST',
+      body: JSON.stringify(profileData),
     });
   }
 }
@@ -188,4 +251,36 @@ export const authApi = {
   resendEmailVerification: (email: string) => apiClient.resendEmailVerification(email),
   signIn: (emailOrUsername: string, password: string) => apiClient.signIn(emailOrUsername, password),
   getUserInfo: (email: string) => apiClient.getUserInfo(email),
+  getCurrentUserProfile: () => apiClient.getCurrentUserProfile(),
+  updateCurrentUserProfile: (profileData: Partial<Pick<UserProfile, 'name' | 'phone' | 'address' | 'gender'>>) => apiClient.updateCurrentUserProfile(profileData),
+};
+
+// 인증 관련 유틸리티 함수들
+export const authUtils = {
+  // 토큰 저장
+  setAuthToken: (token: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('authToken', token);
+    }
+  },
+
+  // 토큰 가져오기
+  getAuthToken: () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('authToken');
+    }
+    return null;
+  },
+
+  // 토큰 제거 (로그아웃)
+  removeAuthToken: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+    }
+  },
+
+  // 로그인 상태 확인
+  isLoggedIn: () => {
+    return authUtils.getAuthToken() !== null;
+  },
 };

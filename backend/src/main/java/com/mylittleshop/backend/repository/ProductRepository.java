@@ -117,4 +117,27 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // 무료 배송 상품 조회
     List<Product> findByShippingFeeEquals(BigDecimal zero);
     Page<Product> findByShippingFeeEquals(BigDecimal zero, Pageable pageable);
+
+    // 추가된 메서드들 - ProductController에서 사용
+    
+    // 카테고리, 상태, 활성화 여부 조합 조회 (페이징)
+    Page<Product> findByCategoryAndStatusAndIsActive(ProductCategory category, ProductStatus status, Boolean isActive, Pageable pageable);
+    
+    // 대소문자 구분 없는 이름 검색 (페이징)
+    Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
+    
+    // 특별 상품 조회 (상태 및 활성화 여부 조건 포함)
+    Page<Product> findByFeaturedTrueAndStatusAndIsActive(ProductStatus status, Boolean isActive, Pageable pageable);
+    Page<Product> findByBestsellerTrueAndStatusAndIsActive(ProductStatus status, Boolean isActive, Pageable pageable);
+    Page<Product> findByNewArrivalTrueAndStatusAndIsActive(ProductStatus status, Boolean isActive, Pageable pageable);
+    
+    // 할인 상품 조회 (상태 및 활성화 여부 조건 포함)
+    Page<Product> findByOriginalGmPriceIsNotNullAndStatusAndIsActive(ProductStatus status, Boolean isActive, Pageable pageable);
+    
+    // JOIN FETCH를 사용한 효율적인 조회 (Lazy Loading 문제 해결)
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.images WHERE p.status = :status AND p.isActive = :isActive")
+    List<Product> findByStatusAndIsActiveWithCategoryAndImages(@Param("status") ProductStatus status, @Param("isActive") Boolean isActive);
+    
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.images")
+    List<Product> findAllWithCategoryAndImages();
 }

@@ -1,22 +1,25 @@
 'use client';
 import React, { useState } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { CategoryUtils } from '@/lib/categories';
 
 export default function BagPage() {
   const [cartItems, setCartItems] = useState([
     {
       id: 1,
-      name: '봄 신상품 컬렉션',
-      size: 'M',
+      name: '모이스처라이저 크림',
+      size: '100ml',
       price: '59,000',
       quantity: 1,
+      categoryId: 'skincare',
     },
     {
       id: 2,
-      name: '여름 특가 상품',
-      size: 'L',
+      name: '헤어 에센스',
+      size: '50ml',
       price: '39,000',
       quantity: 1,
+      categoryId: 'haircare',
     },
   ]);
 
@@ -32,7 +35,7 @@ export default function BagPage() {
   };
 
   const total = cartItems.reduce((sum, item) => 
-    sum + (parseInt(item.price.replace(',', '')) * item.quantity), 0
+    sum + ((parseInt(item.price?.replace(',', '') || '0') || 0) * (item.quantity || 0)), 0
   );
 
   return (
@@ -50,8 +53,11 @@ export default function BagPage() {
               <div key={item.id} className="flex items-center space-x-4 p-4 bg-white rounded-lg shadow">
                 <div className="w-20 h-20 bg-gray-100 rounded-md" />
                 <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-1">
+                    {CategoryUtils.getCategoryName(item.categoryId)}
+                  </p>
                   <h3 className="font-medium">{item.name}</h3>
-                  <p className="text-sm text-gray-600">사이즈: {item.size}</p>
+                  <p className="text-sm text-gray-600">용량: {item.size}</p>
                   <p className="font-medium">₩{item.price}</p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -82,7 +88,7 @@ export default function BagPage() {
           <div className="mt-6 p-4 bg-white rounded-lg shadow">
             <div className="flex justify-between mb-2">
               <span>상품 금액</span>
-              <span>₩{total.toLocaleString()}</span>
+              <span>₩{(total || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span>배송비</span>
@@ -91,7 +97,7 @@ export default function BagPage() {
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between font-bold">
                 <span>총 결제금액</span>
-                <span>₩{(total + 3000).toLocaleString()}</span>
+                <span>₩{((total || 0) + 3000).toLocaleString()}</span>
               </div>
             </div>
           </div>
