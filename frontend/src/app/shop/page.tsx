@@ -62,7 +62,10 @@ export default function ShopPage() {
 
       if (response.success && response.data) {
         // 백엔드 응답 구조에 맞게 수정
-        const products = response.data.data?.products || response.data.products;
+        const products =
+          response.data?.data?.products ||
+          response.data?.products ||
+          [];
         console.log('상품 데이터:', products);
         setProducts(products);
       } else {
@@ -140,10 +143,7 @@ export default function ShopPage() {
       </div>
 
       {/* 카테고리 필터 - 동적 높이로 sticky 고정 */}
-      <div 
-        className="sticky z-20 bg-white px-4 py-3 border-b border-gray-100 shadow-sm"
-        style={{ top: `${searchBarHeight}px` }}
-      >
+      <div className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-gray-100 shadow-sm">
         <CategoryTabs
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}

@@ -31,7 +31,7 @@ const transformApiCartItem = (apiItem: ApiCartItem): CartItem => ({
   id: apiItem.id,
   productId: apiItem.product.id,
   productName: apiItem.product.name,
-  price: apiItem.product.price,
+  price: apiItem.product.price ?? 0,
   quantity: apiItem.quantity,
   imageUrl: apiItem.product.mainImage?.url,
   addedAt: apiItem.createdAt,
