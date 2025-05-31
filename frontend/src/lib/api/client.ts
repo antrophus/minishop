@@ -111,7 +111,12 @@ class ApiClient {
    * 인증이 필요한 엔드포인트인지 확인
    */
   private isAuthRequiredEndpoint(endpoint: string): boolean {
-    const authRequiredEndpoints = ['/profile', '/password'];
+    const authRequiredEndpoints = [
+      '/profile', 
+      '/password',
+      '/cart',
+      '/wishlist'
+    ];
     return authRequiredEndpoints.some(path => endpoint.includes(path));
   }
 

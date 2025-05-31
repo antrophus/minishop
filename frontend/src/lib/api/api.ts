@@ -4,7 +4,15 @@
  */
 
 import { apiClient } from './client';
-import type { ApiResponse } from './types';
+import type { 
+  ApiResponse,
+  CartItem,
+  AddCartItemRequest,
+  UpdateQuantityRequest,
+  CartItemResponse,
+  WishlistItem,
+  WishlistResponse
+} from './types';
 
 /**
  * 시스템 관련 API
@@ -26,50 +34,104 @@ export const systemApi = {
 };
 
 /**
- * 향후 추가될 API들을 위한 placeholder
+ * 장바구니 API
  */
-
-// 장바구니 API (향후 구현)
 export const cartApi = {
-  // 장바구니 조회
-  getCart: async () => {
-    // TODO: 구현 예정
-    console.log('Cart API - 구현 예정');
+  /**
+   * 사용자 장바구니 조회
+   */
+  getCart: async (userId: number): Promise<ApiResponse<CartItem[]>> => {
+    return apiClient.get(`/cart/${userId}`);
   },
 
-  // 상품 추가
-  addItem: async (productId: number, quantity: number) => {
-    // TODO: 구현 예정
-    console.log('Cart API - addItem 구현 예정', { productId, quantity });
+  /**
+   * 장바구니에 상품 추가
+   */
+  addItem: async (userId: number, productId: number, quantity: number): Promise<ApiResponse<CartItemResponse>> => {
+    const request: AddCartItemRequest = { productId, quantity };
+    return apiClient.post(`/cart/${userId}/items`, request);
+  },
+
+  /**
+   * 장바구니 아이템 수량 수정
+   */
+  updateQuantity: async (cartItemId: number, quantity: number): Promise<ApiResponse<CartItemResponse>> => {
+    const request: UpdateQuantityRequest = { quantity };
+    return apiClient.put(`/cart/items/${cartItemId}`, request);
+  },
+
+  /**
+   * 장바구니 아이템 삭제
+   */
+  removeItem: async (cartItemId: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/cart/items/${cartItemId}`);
+  },
+
+  /**
+   * 장바구니 비우기
+   */
+  clearCart: async (userId: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/cart/${userId}/clear`);
+  },
+
+  /**
+   * 장바구니 아이템 수 조회
+   */
+  getItemCount: async (userId: number): Promise<ApiResponse<number>> => {
+    return apiClient.get(`/cart/${userId}/count`);
+  },
+
+  /**
+   * 장바구니 총액 조회
+   */
+  getTotal: async (userId: number): Promise<ApiResponse<number>> => {
+    return apiClient.get(`/cart/${userId}/total`);
   },
 };
 
-// 위시리스트 API (향후 구현)
+/**
+ * 위시리스트 API
+ */
 export const wishlistApi = {
-  // 위시리스트 조회
-  getWishlist: async () => {
-    // TODO: 구현 예정
-    console.log('Wishlist API - 구현 예정');
+  /**
+   * 사용자 위시리스트 조회
+   */
+  getWishlist: async (userId: number): Promise<ApiResponse<WishlistItem[]>> => {
+    return apiClient.get(`/wishlist/${userId}`);
   },
 
-  // 위시리스트에 추가
-  addToWishlist: async (productId: number) => {
-    // TODO: 구현 예정
-    console.log('Wishlist API - addToWishlist 구현 예정', { productId });
-  },
-};
-
-// 주문 API (향후 구현)
-export const ordersApi = {
-  // 주문 목록 조회
-  getOrders: async () => {
-    // TODO: 구현 예정
-    console.log('Orders API - 구현 예정');
+  /**
+   * 위시리스트에 상품 추가
+   */
+  addToWishlist: async (userId: number, productId: number): Promise<ApiResponse<WishlistResponse>> => {
+    return apiClient.post(`/wishlist/${userId}/items/${productId}`);
   },
 
-  // 주문 생성
-  createOrder: async (orderData: any) => {
-    // TODO: 구현 예정
-    console.log('Orders API - createOrder 구현 예정', { orderData });
+  /**
+   * 위시리스트에서 상품 제거
+   */
+  removeFromWishlist: async (userId: number, productId: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/wishlist/${userId}/items/${productId}`);
+  },
+
+  /**
+   * 상품이 위시리스트에 있는지 확인
+   */
+  isInWishlist: async (userId: number, productId: number): Promise<ApiResponse<boolean>> => {
+    return apiClient.get(`/wishlist/${userId}/check/${productId}`);
+  },
+
+  /**
+   * 위시리스트 아이템 수 조회
+   */
+  getCount: async (userId: number): Promise<ApiResponse<number>> => {
+    return apiClient.get(`/wishlist/${userId}/count`);
+  },
+
+  /**
+   * 위시리스트 비우기
+   */
+  clearWishlist: async (userId: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/wishlist/${userId}/clear`);
   },
 };

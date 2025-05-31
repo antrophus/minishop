@@ -519,6 +519,20 @@ public class CartService {
     }
     
     /**
+     * 편의 메서드: addItem (Controller에서 사용)
+     * addItemToUserCart의 alias
+     * 
+     * @param userId 사용자 ID
+     * @param productId 상품 ID
+     * @param quantity 수량
+     * @return 추가된 장바구니 아이템
+     */
+    @Transactional
+    public CartItem addItem(Long userId, Long productId, Integer quantity) {
+        return addItemToUserCart(userId, productId, quantity);
+    }
+    
+    /**
      * 페이징으로 모든 장바구니 조회
      * 
      * @param pageable 페이징 정보

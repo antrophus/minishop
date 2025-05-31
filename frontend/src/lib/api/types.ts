@@ -178,3 +178,66 @@ export interface SignInResponse {
   username: string;
   name: string;
 }
+
+// =============================================================================
+// 장바구니 관련 타입 정의
+// =============================================================================
+
+export interface CartItem {
+  id: number;
+  productId: number;
+  product: Product;
+  quantity: number;
+  price: number;
+  totalPrice: number;
+  createdAt: string;
+}
+
+export interface Cart {
+  id: number;
+  userId: number;
+  items: CartItem[];
+  totalItems: number;
+  totalPrice: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AddCartItemRequest {
+  productId: number;
+  quantity: number;
+}
+
+export interface UpdateQuantityRequest {
+  quantity: number;
+}
+
+export interface CartItemResponse {
+  id: number;
+  productId: number;
+  product: Product;
+  quantity: number;
+  price: number;
+  totalPrice: number;
+  createdAt: string;
+}
+
+// =============================================================================
+// 위시리스트 관련 타입 정의
+// =============================================================================
+
+export interface WishlistItem {
+  id: number;
+  userId: number;
+  productId: number;
+  product: Product;
+  createdAt: string;
+}
+
+export interface WishlistResponse {
+  id: number;
+  userId: number;
+  productId: number;
+  product: Product;
+  createdAt: string;
+}

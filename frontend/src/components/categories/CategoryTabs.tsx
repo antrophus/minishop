@@ -14,7 +14,18 @@ export function CategoryTabs({ selectedCategory, onCategoryChange, className = '
   const categories = CategoryUtils.getAllCategories();
 
   return (
-    <div className={`flex space-x-1 overflow-x-auto pb-2 ${className}`}>
+    <div
+      className={`flex space-x-1 overflow-x-auto pb-2 scrollbar-none ${className}`}
+      style={{
+        msOverflowStyle: 'none', // IE, Edge
+        scrollbarWidth: 'none',  // Firefox
+      }}
+    >
+      <style jsx>{`
+        div::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       {categories.map((category: Category) => (
         <button
           key={category.id}

@@ -288,6 +288,44 @@ public class Product {
         this.gmPrice = this.originalGmPrice.subtract(discountAmount);
     }
     
+    // 편의 메서드: 기본 가격 반환 (GM 가격)
+    public BigDecimal getPrice() {
+        return this.gmPrice;
+    }
+    
+    // 편의 메서드: 기본 이미지 URL 반환
+    public String getImageUrl() {
+        if (images != null && !images.isEmpty()) {
+            // 첫 번째 이미지의 URL 반환
+            return images.get(0).getUrl();
+        }
+        return null;
+    }
+    
+    // 편의 메서드: 메인 이미지 URL 반환 (메인 이미지가 있으면 우선)
+    public String getMainImageUrl() {
+        if (images != null && !images.isEmpty()) {
+            // 메인 이미지를 찾아서 반환
+            return images.stream()
+                .filter(img -> img.getIsMain() != null && img.getIsMain())
+                .findFirst()
+                .map(img -> img.getUrl())
+                .orElse(images.get(0).getUrl()); // 메인 이미지가 없으면 첫 번째 이미지
+        }
+        return null;
+    }
+    
+    // 편의 메서드: 모든 이미지 URL 목록 반환
+    public List<String> getAllImageUrls() {
+        if (images != null && !images.isEmpty()) {
+            return images.stream()
+                .map(img -> img.getUrl())
+                .filter(url -> url != null && !url.trim().isEmpty())
+                .toList();
+        }
+        return List.of();
+    }
+    
     // 가격 유형 열거형
     public enum PriceType {
         GM,     // 소비자가

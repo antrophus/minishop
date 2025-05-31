@@ -59,6 +59,9 @@ public class SecurityConfig {
                 corsConfig.addAllowedOrigin("http://localhost:3000"); // Next.js
                 corsConfig.addAllowedOrigin("http://localhost:3001"); // Next.js (포트 3001)
                 corsConfig.addAllowedOrigin("http://localhost:5173"); // Vite
+                corsConfig.addAllowedOrigin("http://localhost:5500"); // Live Server
+                corsConfig.addAllowedOrigin("http://127.0.0.1:3000"); // 127.0.0.1
+                corsConfig.addAllowedOrigin("http://127.0.0.1:5500"); // 127.0.0.1 Live Server
                 corsConfig.addAllowedHeader("*");
                 corsConfig.addAllowedMethod("*");
                 corsConfig.setAllowCredentials(true);
@@ -80,6 +83,10 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOrigin("http://localhost:3000"); // Next.js 프론트엔드 주소
+        config.addAllowedOrigin("http://localhost:3001"); // Next.js (포트 3001)
+        config.addAllowedOrigin("http://localhost:5500"); // Live Server
+        config.addAllowedOrigin("http://127.0.0.1:3000"); // 127.0.0.1
+        config.addAllowedOrigin("http://127.0.0.1:5500"); // 127.0.0.1 Live Server
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);

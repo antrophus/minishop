@@ -31,6 +31,17 @@ export type {
   CompleteRegistrationRequest,
   UserProfile,
   SignInResponse,
+  
+  // 장바구니 관련 타입
+  CartItem,
+  Cart,
+  AddCartItemRequest,
+  UpdateQuantityRequest,
+  CartItemResponse,
+  
+  // 위시리스트 관련 타입
+  WishlistItem,
+  WishlistResponse,
 } from './types';
 
 // 클라이언트
@@ -43,12 +54,23 @@ export { AuthApi, authApiMethods as authApi, authUtils } from './auth';
 export { productsApi, categoriesApi } from './products';
 
 // 기타 API
-export { systemApi, cartApi, wishlistApi, ordersApi } from './api';
+export { systemApi, cartApi, wishlistApi } from './api';
+
+// API 유틸리티
+export { 
+  getCurrentUserId, 
+  isUserAuthenticated, 
+  getErrorMessage, 
+  withApiWrapper, 
+  unwrapApiResponse, 
+  authUtils as apiAuthUtils,
+  logApiCall 
+} from './utils';
 
 // 내부 사용을 위한 import
 import { authApiMethods, authUtils } from './auth';
 import { productsApi, categoriesApi } from './products';
-import { systemApi, cartApi, wishlistApi, ordersApi } from './api';
+import { systemApi, cartApi, wishlistApi } from './api';
 import { apiClient, authApiClient } from './client';
 
 /**
@@ -63,11 +85,10 @@ export const api = {
   products: productsApi,
   categories: categoriesApi,
   
-  // 향후 구현될 API들
+  // 구현된 API들
   system: systemApi,
   cart: cartApi,
   wishlist: wishlistApi,
-  orders: ordersApi,
   
   // 일반 API 클라이언트
   client: apiClient,

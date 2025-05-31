@@ -320,7 +320,19 @@ public class WishlistService {
         return wishlistRepository.findByUserIdAndCreatedAtAfter(userId, date, pageable);
     }
     /**
-     * 특정 사용자의 최근 위시리스트 조회
+     * 편의 메서드: countByUserId (Controller에서 사용)
+     * countUserWishlistItems의 alias
+     * 
+     * @param userId 사용자 ID
+     * @return 위시리스트 항목 수
+     */
+    @Transactional(readOnly = true)
+    public long countByUserId(Long userId) {
+        return countUserWishlistItems(userId);
+    }
+    
+    /**
+     * 사용자 ID의 최근 위시리스트 조회
      */
     @Transactional(readOnly = true)
     public List<Wishlist> findByUserIdOrderByCreatedAtDesc(Long userId) {

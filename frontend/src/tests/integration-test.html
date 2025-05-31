@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyLittleShop 통합 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .test-controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            transition: background 0.2s;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .config-section {
+            margin-bottom: 20px;
+        }
+        
+        .config-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .config-section input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        #testOutput {
+            background: #1e1e1e;
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .status {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .status-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">🧪</span>MyLittleShop 통합 테스트</h1>
+        
+        <div class="status status-info">
+            <span class="emoji">ℹ️</span>
+            이 페이지는 장바구니 & 위시리스트 API의 통합 테스트를 수행합니다.
+            테스트 실행 전에 백엔드 서버가 실행 중인지 확인하세요.
+        </div>
+        
+        <div class="test-controls">
+            <h3>테스트 설정</h3>
+            
+            <div class="grid">
+                <div class="config-section">
+                    <label for="userId">테스트 사용자 ID:</label>
+                    <input type="number" id="userId" value="1" min="1">
+                </div>
+                
+                <div class="config-section">
+                    <label for="baseUrl">API 베이스 URL:</label>
+                    <input type="url" id="baseUrl" value="http://localhost:8080/api">
+                </div>
+            </div>
+            
+            <div class="grid">
+                <div class="config-section">
+                    <label for="productIds">테스트 상품 ID들 (콤마로 구분):</label>
+                    <input type="text" id="productIds" value="1,2,3">
+                </div>
+                
+                <div class="config-section">
+                    <label for="timeout">타임아웃 (ms):</label>
+                    <input type="number" id="timeout" value="5000" min="1000">
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn" onclick="runFullTest()">
+                    <span class="emoji">🚀</span>전체 테스트 실행
+                </button>
+                
+                <button class="btn btn-secondary" onclick="runServerTest()">
+                    <span class="emoji">📡</span>서버 연결 테스트
+                </button>
+                
+                <button class="btn btn-secondary" onclick="runCartTest()">
+                    <span class="emoji">🛒</span>장바구니 테스트
+                </button>
+                
+                <button class="btn btn-secondary" onclick="runWishlistTest()">
+                    <span class="emoji">❤️</span>위시리스트 테스트
+                </button>
+                
+                <button class="btn btn-success" onclick="clearOutput()">
+                    <span class="emoji">🧹</span>출력 지우기
+                </button>
+            </div>
+        </div>
+        
+        <div id="testOutput">테스트 출력이 여기에 표시됩니다...</div>
+    </div>
+
+    <script>
+        // 콘솔 출력을 화면에 표시하기 위한 래퍼
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        const outputElement = document.getElementById('testOutput');
+        
+        function appendToOutput(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colorMap = {
+                log: '#ffffff',
+                error: '#ff6b6b',
+                warn: '#ffd93d',
+                info: '#74c0fc'
+            };
+            
+            const formattedMessage = `[${timestamp}] ${message}`;
+            outputElement.innerHTML += `<span style="color: ${colorMap[type]}">${formattedMessage}</span>\n`;
+            outputElement.scrollTop = outputElement.scrollHeight;
+        }
+        
+        console.log = function(message) {
+            originalConsoleLog.apply(console, arguments);
+            appendToOutput(message, 'log');
+        };
+        
+        console.error = function(message) {
+            originalConsoleError.apply(console, arguments);
+            appendToOutput(message, 'error');
+        };
+        
+        console.warn = function(message) {
+            originalConsoleWarn.apply(console, arguments);
+            appendToOutput(message, 'warn');
+        };
+        
+        function clearOutput() {
+            outputElement.innerHTML = '테스트 출력이 여기에 표시됩니다...';
+        }
+        
+        // 설정 읽기 함수
+        function getTestConfig() {
+            return {
+                userId: parseInt(document.getElementById('userId').value),
+                productIds: document.getElementById('productIds').value.split(',').map(id => parseInt(id.trim())),
+                baseUrl: document.getElementById('baseUrl').value,
+                timeout: parseInt(document.getElementById('timeout').value)
+            };
+        }
+        
+        // API 함수들 (간단한 fetch 기반)
+        const testApi = {
+            async getCart(userId) {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/cart/${userId}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            },
+            
+            async addToCart(userId, productId, quantity) {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/cart/${userId}/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ productId, quantity })
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            },
+            
+            async updateCartQuantity(cartItemId, quantity) {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/cart/items/${cartItemId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ quantity })
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            },
+            
+            async removeFromCart(cartItemId) {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/cart/items/${cartItemId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            },
+            
+            async clearCart(userId) {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/cart/${userId}/clear`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            },
+            
+            async getWishlist(userId) {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/wishlist/${userId}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            },
+            
+            async addToWishlist(userId, productId) {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/wishlist/${userId}/items/${productId}`, {
+                    method: 'POST'
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            },
+            
+            async removeFromWishlist(userId, productId) {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/wishlist/${userId}/items/${productId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            }
+        };
+        
+        // 테스트 실행 함수들
+        async function runServerTest() {
+            console.log('🚀 서버 연결 테스트 시작...');
+            
+            try {
+                const config = getTestConfig();
+                const response = await fetch(`${config.baseUrl}/products`);
+                
+                if (!response.ok) {
+                    throw new Error(`서버 응답 오류: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ 서버 연결 성공!');
+                console.log(`📊 상품 수: ${data.data?.products?.length || 0}개`);
+                
+            } catch (error) {
+                console.error('❌ 서버 연결 실패:', error.message);
+            }
+        }
+        
+        async function runCartTest() {
+            console.log('🛒 장바구니 테스트 시작...');
+            
+            try {
+                const config = getTestConfig();
+                const { userId, productIds } = config;
+                
+                // 1. 장바구니 조회
+                console.log('1. 장바구니 조회 테스트...');
+                const cartData = await testApi.getCart(userId);
+                console.log(`✅ 현재 장바구니 아이템 수: ${cartData.data?.length || 0}개`);
+                
+                // 2. 상품 추가
+                console.log('2. 장바구니 상품 추가 테스트...');
+                const addResult = await testApi.addToCart(userId, productIds[0], 2);
+                console.log(`✅ 상품 추가 성공: ID ${addResult.data?.id}`);
+                
+                // 3. 수량 수정
+                if (addResult.data?.id) {
+                    console.log('3. 수량 수정 테스트...');
+                    await testApi.updateCartQuantity(addResult.data.id, 5);
+                    console.log('✅ 수량 수정 성공');
+                    
+                    // 4. 아이템 삭제
+                    console.log('4. 아이템 삭제 테스트...');
+                    await testApi.removeFromCart(addResult.data.id);
+                    console.log('✅ 아이템 삭제 성공');
+                }
+                
+                console.log('🎉 장바구니 테스트 완료!');
+                
+            } catch (error) {
+                console.error('❌ 장바구니 테스트 실패:', error.message);
+            }
+        }
+        
+        async function runWishlistTest() {
+            console.log('❤️ 위시리스트 테스트 시작...');
+            
+            try {
+                const config = getTestConfig();
+                const { userId, productIds } = config;
+                
+                // 1. 위시리스트 조회
+                console.log('1. 위시리스트 조회 테스트...');
+                const wishlistData = await testApi.getWishlist(userId);
+                console.log(`✅ 현재 위시리스트 아이템 수: ${wishlistData.data?.length || 0}개`);
+                
+                // 2. 상품 추가
+                console.log('2. 위시리스트 상품 추가 테스트...');
+                await testApi.addToWishlist(userId, productIds[1]);
+                console.log('✅ 상품 추가 성공');
+                
+                // 3. 상품 제거
+                console.log('3. 상품 제거 테스트...');
+                await testApi.removeFromWishlist(userId, productIds[1]);
+                console.log('✅ 상품 제거 성공');
+                
+                console.log('🎉 위시리스트 테스트 완료!');
+                
+            } catch (error) {
+                console.error('❌ 위시리스트 테스트 실패:', error.message);
+            }
+        }
+        
+        async function runFullTest() {
+            console.log('🚀 전체 통합 테스트 시작...');
+            console.log('='.repeat(50));
+            
+            // 테스트 데이터 정리
+            try {
+                const config = getTestConfig();
+                await testApi.clearCart(config.userId);
+                console.log('🧹 테스트 데이터 정리 완료');
+            } catch (error) {
+                console.warn('⚠️ 테스트 데이터 정리 중 오류:', error.message);
+            }
+            
+            // 순차적으로 모든 테스트 실행
+            await runServerTest();
+            console.log('');
+            await runCartTest();
+            console.log('');
+            await runWishlistTest();
+            
+            console.log('');
+            console.log('='.repeat(50));
+            console.log('🎉 전체 통합 테스트 완료!');
+        }
+        
+        // 페이지 로드 시 초기 메시지
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('💡 MyLittleShop 통합 테스트 페이지가 로드되었습니다.');
+            console.log('📋 테스트 실행 전에 백엔드 서버(localhost:8080)가 실행 중인지 확인하세요.');
+        });
+    </script>
+</body>
+</html>

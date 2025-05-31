@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { CategoryTabs, SearchBar } from '@/components/categories';
 import { CategoryUtils } from '@/lib/categories';
 import { productsApi, type Product } from '@/lib/api';
+import ProductCard from '@/components/ProductCard';
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -12,6 +13,15 @@ export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [searchBarHeight, setSearchBarHeight] = useState(0);
+  const searchBarRef = useRef<HTMLDivElement>(null);
+
+  // SearchBar 높이 측정
+  useEffect(() => {
+    if (searchBarRef.current) {
+      setSearchBarHeight(searchBarRef.current.offsetHeight);
+    }
+  }, []);
 
   // 페이지 로드 시 초기 데이터 로딩
   useEffect(() => {
@@ -120,19 +130,24 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* 검색 바 */}
-      <SearchBar
-        onSearch={handleSearch}
-        placeholder="상품 검색"
-        showCategoryFilter={false}
-        className="sticky top-0 z-10"
-      />
+      <div ref={searchBarRef}>
+        <SearchBar
+          onSearch={handleSearch}
+          placeholder="상품 검색"
+          showCategoryFilter={false}
+          className="sticky top-0 z-30"
+        />
+      </div>
 
-      {/* 카테고리 필터 */}
-      <div className="px-4 py-3">
+      {/* 카테고리 필터 - 동적 높이로 sticky 고정 */}
+      <div 
+        className="sticky z-20 bg-white px-4 py-3 border-b border-gray-100 shadow-sm"
+        style={{ top: `${searchBarHeight}px` }}
+      >
         <CategoryTabs
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
-          className="mb-4"
+          className="mb-0"
         />
       </div>
       {/* 상품 목록 */}
@@ -152,53 +167,7 @@ export default function ShopPage() {
           </div>
         ) : (
           (products || []).map((product) => (
-            <Link key={product.id} href={`/product/${product.id}`}>
-              <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                <div className="aspect-square bg-gray-100 relative">
-                  {product.mainImage ? (
-                    <img 
-                      src={product.mainImage.url} 
-                      alt={product.mainImage.alt}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      No Image
-                    </div>
-                  )}
-                  {product.discount && (
-                    <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
-                      -{product.discount.rate}%
-                    </div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <p className="text-xs text-gray-500">
-                    {product.category?.name || '미분류'}
-                  </p>
-                  <h3 className="font-medium mt-1 line-clamp-2">{product.name}</h3>
-                  <div className="mt-1">
-                    <p className="text-sm font-semibold">₩{(product.price || 0).toLocaleString()}</p>
-                    {product.originalPrice && (
-                      <p className="text-xs text-gray-500 line-through">
-                        ₩{product.originalPrice.toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                  <div className="mt-1 flex gap-1">
-                    {product.featured && (
-                      <span className="bg-yellow-100 text-yellow-800 text-xs px-1 py-0.5 rounded">추천</span>
-                    )}
-                    {product.bestseller && (
-                      <span className="bg-green-100 text-green-800 text-xs px-1 py-0.5 rounded">베스트</span>
-                    )}
-                    {product.newArrival && (
-                      <span className="bg-blue-100 text-blue-800 text-xs px-1 py-0.5 rounded">신상품</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Link>
+            <ProductCard key={product.id} product={product} />
           ))
         )}
       </div>

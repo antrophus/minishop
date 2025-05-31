@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CategoryTabs } from '@/components/categories';
 import { CategoryUtils } from '@/lib/categories';
 import { productsApi, type Product } from '@/lib/api';
-// 또는 통합 API 객체 사용: import { api } from '@/lib/api';
+import ProductCard from '@/components/ProductCard';
 
 export default function ProductListPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -103,58 +103,7 @@ export default function ProductListPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products && products.length > 0 ? (
             products.map((product) => (
-              <div key={product.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                <div className="aspect-square bg-gray-100 relative">
-                  {product.mainImage ? (
-                    <img 
-                      src={product.mainImage.url} 
-                      alt={product.mainImage.alt}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      No Image
-                    </div>
-                  )}
-                  {product.discount && (
-                    <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
-                      -{product.discount.rate}%
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <p className="text-xs text-gray-500 mb-1">{product.category?.name || '미분류'}</p>
-                  <h3 className="font-medium mb-2 line-clamp-2">{product.name}</h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-lg font-semibold text-blue-600">
-                        ₩{(product.price || 0).toLocaleString()}
-                      </p>
-                      {product.originalPrice && (
-                        <p className="text-sm text-gray-500 line-through">
-                          ₩{product.originalPrice.toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                    {product.featured && (
-                      <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
-                        추천
-                      </span>
-                    )}
-                    {product.bestseller && (
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                        베스트
-                      </span>
-                    )}
-                    {product.newArrival && (
-                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                        신상품
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">재고: {product.stockQuantity}개</p>
-                </div>
-              </div>
+              <ProductCard key={product.id} product={product} />
             ))
           ) : (
             <div className="col-span-full text-center py-12">
